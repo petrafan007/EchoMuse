@@ -13,6 +13,7 @@ import logging
 import em_config_types
 import em_console_pw
 import em_esphome
+import em_poc  # fork: ROUTES for the voiceRoute mirror below
 import em_oww_sync
 import em_scenes
 import em_shadow
@@ -57,6 +58,17 @@ async def apply_live_config(device_id: str, live, effective: dict) -> None:
         live.save_utterances = bool(effective["saveUtterances"])
     if "wakeClipCapture" in effective:
         live.wake_clip_capture = bool(effective["wakeClipCapture"])
+    # FORK (Mercury second sink): route + POC endpoint mirrors, read by
+    # em_poc.resolve_route / poc_endpoint per turn. Validated here, not
+    # trusted: an unknown route or a non-http endpoint fails safe to the
+    # stock path / default instead of breaking turns.
+    if "voiceRoute" in effective:
+        live.voice_route = effective["voiceRoute"] \
+            if effective["voiceRoute"] in em_poc.ROUTES else "ha"
+    if "pocEndpoint" in effective:
+        ep = str(effective["pocEndpoint"])
+        live.poc_endpoint = ep if ep.startswith(("http://", "https://")) \
+            else "http://127.0.0.1:8896"
         if not live.wake_clip_capture:
             live.wake_capture.reset()
     if "wakeClipMinScore" in effective:

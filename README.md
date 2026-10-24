@@ -2,6 +2,45 @@
 
 **Turn an old Amazon Echo Dot (2nd gen) into a local voice assistant for Home Assistant.**
 
+> **Fork note — Mercury voice stack.** This fork (petrafan007/EchoMuse,
+> forked from [wilbowes/EchoMuse](https://github.com/wilbowes/EchoMuse))
+> adds a second voice sink beside Home Assistant: post-wake Dot audio can
+> be routed to a Mercury voice pipeline — **Mercury 3** as the brain,
+> **Mercury Decide** as the intent router, **Google Cloud WaveNet** voices
+> (free tier) with local Piper as fallback — instead of Home Assistant's
+> Assist pipeline. Upstream EchoMuse is unchanged for the default route;
+> the fork's additions are one routing module (`controller/em_poc.py`),
+> a per-device dashboard toggle, and the POC contract below. See
+> `controller/em_poc.py` for the routing contract and the turn-end rules
+> (no hangs, no cut-off commands, no double answers).
+>
+> **Voice route** (dashboard → device → Advanced → Mercury voice
+> routing, or `voiceRoute` in config; takes effect on the next turn):
+>
+> - `ha` — stock Home Assistant turn (default; upstream behaviour).
+> - `poc_fallback` — Mercury POC first; if the POC demonstrably never
+>   ran, the buffered utterance replays into a stock HA turn (staging).
+> - `poc_only` — Mercury POC only, no HA fallback (cutover).
+> - `shadow` — HA keeps answering; the POC receives the mic audio,
+>   transcribes and Decide-routes it, and only logs — it never acts or
+>   speaks (prove the path before any POC turn is ever spoken).
+>
+> **POC contract** (the POC serves `POST /api/turn`): request
+> `{session_id, device, barge, audio_b64, end_reason, mode}` with WAV
+> mono S16_LE 16 kHz audio; response `{transcript, decide_verdict,
+> decide_confidence, actions[], engine, stop, audio_b64}` with a 48 kHz
+> mono WAV reply (empty when stop / no-reply). `mode: "shadow"` returns
+> transcript + Decide verdict only — no LLM call, no actions, no TTS.
+> The ESPHome server stays up in every mode, so media-player, timer and
+> announcement entities keep working off the same satellite connection.
+>
+> **End state: full cutover.** `poc_only` is the destination; HA voice
+> is the staging fallback, not a permanent second path. Cutover is gated
+> on two live acceptance tests: (a) voice diversion with media entities
+> (media player, timers, announcements) still working; (b) turn-end
+> semantics exact — no hangs, no cut-offs, no double answers, including
+> barge-in mid-reply and forced-outage behaviour.
+
 [![CI](https://github.com/wilbowes/EchoMuse/actions/workflows/ci.yml/badge.svg)](https://github.com/wilbowes/EchoMuse/actions/workflows/ci.yml)
 [![Firmware](https://img.shields.io/github/v/release/wilbowes/EchoMuse?filter=v*&label=firmware)](https://github.com/wilbowes/EchoMuse/releases)
 [![emOS](https://img.shields.io/github/v/release/wilbowes/EchoMuse?filter=emos-v*&label=emOS)](https://github.com/wilbowes/EchoMuse/releases)

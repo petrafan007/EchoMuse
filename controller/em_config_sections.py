@@ -67,6 +67,10 @@ SECTIONS: dict[str, dict] = {
             "consolePassword", "consoleTimeoutMin",
             # Fleet-only (FLEET_KEYS): shown here, never overridden per device.
             "controllerEndpoints",
+            # FORK (Mercury second sink): which voice pipeline answers a
+            # turn, and where the POC lives. Controller-only: the device
+            # ignores unknown config keys, so pushing them costs nothing.
+            "voiceRoute", "pocEndpoint",
         ],
     },
     "bluetooth": {

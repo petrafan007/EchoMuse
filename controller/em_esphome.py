@@ -1343,6 +1343,7 @@ class EchoMuseSatellite(SatelliteServerProtocol):
         trace: "TurnTrace | None" = None,
         preroll_discard: int = VOICE_PREROLL_DISCARD,
         wake_word_phrase: str = "",
+        tap=None,          # FORK: shadow-mode mic tap, see trigger_voice_turn
     ) -> None:
         """
         Execute one voice turn over the live HA connection.
@@ -1450,7 +1451,8 @@ class EchoMuseSatellite(SatelliteServerProtocol):
             # instead of hanging the turn (and the spinner) indefinitely.
             try:
                 await asyncio.wait_for(
-                    self._stream_mic_audio(device, preroll_discard=preroll_discard),
+                    self._stream_mic_audio(device, preroll_discard=preroll_discard,
+                                           tap=tap),
                     timeout=20.0,
                 )
             except asyncio.TimeoutError:
@@ -1712,7 +1714,8 @@ class EchoMuseSatellite(SatelliteServerProtocol):
                     pass  # dashboard notification is best-effort
             log.info(f"[{self._log_name}] ESPHome voice turn complete")
 
-    async def _stream_mic_audio(self, device, preroll_discard: int = VOICE_PREROLL_DISCARD) -> None:
+    async def _stream_mic_audio(self, device, preroll_discard: int = VOICE_PREROLL_DISCARD,
+                                tap=None) -> None:
         """
         Pull PCM frames from device.voice_queue and send them to HA as
         VoiceAssistantAudio messages.
@@ -2058,6 +2061,12 @@ class EchoMuseSatellite(SatelliteServerProtocol):
                     if self._trace:
                         self._trace.audio_frames += 1
                     pcm_buf.extend(payload)
+                    # FORK: shadow tap — exactly what STT heard (post-NS,
+                    # post-gate), same point as the utterance capture above.
+                    # A tap must never slow the turn: it is a bounded
+                    # bytearray extend (see em_poc.capped_tap).
+                    if tap is not None:
+                        tap(payload)
 
                     # Send in 320-byte chunks (20ms at 16kHz mono S16_LE) —
                     # split small for smoother ESPHome API streaming.
@@ -3121,6 +3130,9 @@ async def trigger_voice_turn(
     post_turn_play,   # async callable(pcm_chunks) -> decoded byte count
     trigger_label: str = "unknown",  # "wakeword(0.522)" or "button" for trace
     preroll_discard: int = VOICE_PREROLL_DISCARD,
+    tap=None,         # FORK: optional callable(frame) — shadow-mode tap of
+                      # exactly what goes on the wire to HA (post-NS,
+                      # post-gate). Never blocks the turn; see em_poc.
 ) -> bool:
     """
     Entry point for OWW/button-triggered voice turns in esphome mode.
@@ -3188,6 +3200,7 @@ async def trigger_voice_turn(
         post_turn_play=post_turn_play,
         trace=trace,
         wake_word_phrase=wake_word_phrase,
+        tap=tap,
     )
 
     return satellite._continue_conversation

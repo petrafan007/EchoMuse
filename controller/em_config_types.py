@@ -85,6 +85,10 @@ KINDS: dict[str, str] = {
     "saveUtterances": BOOL,
     "wakeClipCapture": BOOL,
     "wakeClipMinScore": FLOAT,
+    # FORK (Mercury second sink): controller-only, validated where used
+    # (em_poc.resolve_route / poc_endpoint fail safe to ha / default).
+    "voiceRoute": STR,
+    "pocEndpoint": STR,
 }
 
 

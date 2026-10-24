@@ -362,6 +362,22 @@ DEFAULT_DEVICE_CONFIG = {
     # delivered as a file, not by the config push (em_endpoints). Empty =
     # mDNS alone, which is how every fleet worked before it.
     "controllerEndpoints": [],
+    # FORK (Mercury second sink): which voice pipeline answers a turn.
+    # "ha" is stock upstream behaviour and the default for every existing
+    # fleet — changing this line alone must never move a fleet, the same
+    # reason owwOnDevice's default is pinned by _fixup_v25. "poc_fallback"
+    # routes to the POC with HA replay on POC failure (staging);
+    # "poc_only" routes to the POC with no HA fallback (cutover);
+    # "shadow" keeps HA answering and taps audio to the POC for log-only
+    # transcription + Decide. Unknown values fail safe to "ha" in
+    # em_poc.resolve_route. Controller-only: the device ignores unknown
+    # config keys, and em_device_config mirrors these into live attrs.
+    "voiceRoute": "ha",
+    # FORK: POC base URL. 127.0.0.1 is correct when the POC runs on the
+    # same host as the controller (thinclient); a docker-bridge staged
+    # controller must override it to the host LAN address, since
+    # 127.0.0.1 inside a bridge container is the container itself.
+    "pocEndpoint": "http://127.0.0.1:8896",
 }
 
 # The highest wake threshold that can ever fire, enforced on every config

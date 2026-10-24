@@ -9580,7 +9580,7 @@ const CONFIG_SECTIONS = {
   "wakeword": ["owwModel", "owwThreshold", "owwSpeexNs", "bargeInEnabled", "bargeInThreshold", "wakeArbitrationMs", "owwOnDevice", "wakeSound", "wakeSoundLevel", "wakeClipCapture", "wakeClipMinScore"],
   "microphones": ["adcMicpga", "adcDigitalGain", "micGainDb", "beamformingEnabled", "beamAngle", "wakeMic", "aecEnabled", "aecDelayMs", "aecTailMs", "aecRefSource", "nsAsr", "saveUtterances"],
   "ring": ["ledScene", "ledListenColor", "ledThinkColor", "remoteVolumeArc", "meterAttack", "meterDecay", "meterFloor", "meterGamma", "meterRef", "meterCurve"],
-  "advanced": ["agcEnabled", "vadThreshold", "vadSpeechMs", "vadSilenceMs", "buttonSingleTapEvent", "buttonMultiTapMs", "consolePassword", "consoleTimeoutMin", "controllerEndpoints"],
+  "advanced": ["agcEnabled", "vadThreshold", "vadSpeechMs", "vadSilenceMs", "buttonSingleTapEvent", "buttonMultiTapMs", "consolePassword", "consoleTimeoutMin", "controllerEndpoints", "voiceRoute", "pocEndpoint"],
   "bluetooth": ["bleProxyEnabled", "bleProxyConnections"],
   "sendspin": ["sendspinEnabled", "sendspinUnpaired"]
 };
@@ -10432,6 +10432,31 @@ function DeviceConfigForm({ config, onChange, disabled, sections, onScopeChange,
           <Slider label="Threshold" sub="RMS above this = speech (pre-gain units)" value={config.vadThreshold ?? 0.001} min={0.0001} max={0.02} step={0.0001} onChange={v => set('vadThreshold', v)}/>
           <Slider label="Speech gate" sub="speech needed to open" value={config.vadSpeechMs ?? 160} min={32} max={320} step={32} unit="ms" onChange={v => set('vadSpeechMs', v)}/>
           <Slider label="Silence gate" sub="silence needed to close" value={config.vadSilenceMs ?? 800} min={200} max={2000} step={100} unit="ms" onChange={v => set('vadSilenceMs', v)}/>
+        </div>
+        {/* FORK: Mercury voice routing — per-device pipeline selection.
+            Takes effect on the next turn, no restart. POC modes need the
+            Mercury POC running at the endpoint below. */}
+        {subHeader('Mercury voice routing')}
+        <div className="em-grid2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 var(--space-12)', ...inputStyle }}>
+          <Select label="Voice route" sub="which pipeline answers a turn: Home Assistant (stock), Mercury POC with HA fallback (staging), Mercury POC only (cutover — no HA fallback), or HA with a log-only POC shadow tap"
+            value={config.voiceRoute ?? 'ha'}
+            options={[
+              { value: 'ha', label: 'Home Assistant' },
+              { value: 'poc_fallback', label: 'POC + HA fallback' },
+              { value: 'poc_only', label: 'POC only' },
+              { value: 'shadow', label: 'Shadow' },
+            ]}
+            onChange={v => set('voiceRoute', v)}/>
+          <div className="em-field">
+            <div style={{ marginBottom: 'var(--space-3)' }}>
+              <span className="em-field__label">POC endpoint</span>
+            </div>
+            <input type="text" autoComplete="off" spellCheck="false" placeholder="http://127.0.0.1:8896"
+              value={config.pocEndpoint ?? 'http://127.0.0.1:8896'}
+              onChange={e => set('pocEndpoint', e.target.value)}
+              className="em-inset em-input" style={{ width: '100%' }}/>
+            <div className="em-field__help">base URL of the Mercury POC. 127.0.0.1 is correct when the POC runs on the same host as the controller; a bridge-networked staged controller needs the host LAN address instead.</div>
+          </div>
         </div>
       </Stage>
 

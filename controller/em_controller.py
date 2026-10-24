@@ -93,6 +93,7 @@ import em_dbwriter
 import em_tasks
 import em_pacing
 import em_platform
+import em_poc  # fork: Mercury POC second sink (voiceRoute routing)
 import em_boards
 import em_tcp
 import em_wsclose
@@ -2941,13 +2942,55 @@ async def _run_voice_locked(device: Device, trigger_label: str = "unknown",
             while True:
                 should_continue = False
                 try:
-                    should_continue = await esphome.trigger_voice_turn(
-                        device=device,
-                        on_thinking=on_thinking_esphome,
-                        post_turn_play=post_turn_play_esphome,
-                        trigger_label=turn_label,
-                        preroll_discard=preroll_discard,
-                    )
+                    # FORK: Mercury voice routing. 'ha' is the stock path,
+                    # unchanged. 'poc_fallback'/'poc_only' run the POC turn
+                    # (same on_thinking/post_turn_play closures, so LED,
+                    # meter, barge-watcher and mic_stop behaviour are
+                    # identical); 'shadow' runs the stock HA turn and taps
+                    # its mic audio to the POC for log-only transcription
+                    # + Decide. See em_poc.py for the routing contract.
+                    route = em_poc.resolve_route(device)
+                    if route == "shadow":
+                        tap_buf = bytearray()
+                        should_continue = await esphome.trigger_voice_turn(
+                            device=device,
+                            on_thinking=on_thinking_esphome,
+                            post_turn_play=post_turn_play_esphome,
+                            trigger_label=turn_label,
+                            preroll_discard=preroll_discard,
+                            tap=em_poc.capped_tap(tap_buf),
+                        )
+                        if tap_buf:
+                            em_poc.spawn_shadow_post(
+                                device, bytes(tap_buf), turn_label)
+                    elif route in ("poc_fallback", "poc_only"):
+                        async def _ha_turn():
+                            return await esphome.trigger_voice_turn(
+                                device=device,
+                                on_thinking=on_thinking_esphome,
+                                post_turn_play=post_turn_play_esphome,
+                                trigger_label="poc-fallback",
+                                preroll_discard=0,
+                            )
+                        should_continue = await em_poc.run_poc_turn(
+                            device,
+                            on_thinking=on_thinking_esphome,
+                            post_turn_play=post_turn_play_esphome,
+                            trigger_label=turn_label,
+                            preroll_discard=preroll_discard,
+                            ha_turn=_ha_turn,
+                            put_frame=device.voice_queue.put,
+                            sentinel_end=esphome.VAD_SENTINEL_END,
+                            allow_fallback=(route == "poc_fallback"),
+                        )
+                    else:
+                        should_continue = await esphome.trigger_voice_turn(
+                            device=device,
+                            on_thinking=on_thinking_esphome,
+                            post_turn_play=post_turn_play_esphome,
+                            trigger_label=turn_label,
+                            preroll_discard=preroll_discard,
+                        )
                 finally:
                     # Watcher spans thinking→playback and is owned here:
                     # every exit path (normal, barge, error, cancel)
