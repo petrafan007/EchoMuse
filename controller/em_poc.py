@@ -4,8 +4,8 @@ Routes post-wake Dot audio to the Mercury POC (POST /api/turn) instead of
 Home Assistant's voice pipeline, per the device's voiceRoute config:
 
   ha            stock HA turn (default; upstream behaviour, unchanged)
-  poc_fallback  POC first; on POC failure, replay the buffered utterance
-                into a stock HA turn (staging mode)
+  echomuse_mercury  EchoMuse Mercury first; on POC failure, replay the
+                buffered utterance into a stock HA turn (staging mode)
   poc_only      POC first; on POC failure the turn ends quietly (cutover
                 mode — HA voice is deliberately NOT a fallback here)
   shadow        stock HA turn, plus a tap of the mic audio is transcribed
@@ -71,7 +71,7 @@ log = logging.getLogger("echomuse.poc")
 
 # ─── Routing ────────────────────────────────────────────────────────────────
 
-ROUTES = ("ha", "poc_fallback", "poc_only", "shadow")
+ROUTES = ("ha", "echomuse_mercury", "poc_only", "shadow")
 
 DEFAULT_POC_ENDPOINT = "http://127.0.0.1:8896"
 

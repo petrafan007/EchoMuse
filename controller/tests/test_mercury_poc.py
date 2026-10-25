@@ -75,6 +75,18 @@ def test_route_unknown_value_fails_safe_to_ha():
     assert em_poc.resolve_route(dev) == "ha"
 
 
+def test_route_echomuse_mercury_resolves_and_old_name_fails_safe():
+    # Rename: poc_fallback -> echomuse_mercury (display "EchoMuse Mercury").
+    assert "echomuse_mercury" in em_poc.ROUTES
+    assert "poc_fallback" not in em_poc.ROUTES
+    dev = FakeDevice()
+    dev.voice_route = "echomuse_mercury"
+    assert em_poc.resolve_route(dev) == "echomuse_mercury"
+    dev.voice_route = "poc_fallback"
+    assert em_poc.resolve_route(dev) == "ha"
+    assert em_poc.ROUTES == ("ha", "echomuse_mercury", "poc_only", "shadow")
+
+
 def test_poc_endpoint_default_and_validation(monkeypatch):
     monkeypatch.delenv("EM_POC_ENDPOINT", raising=False)
     dev = FakeDevice()

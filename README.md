@@ -18,7 +18,7 @@
 > routing, or `voiceRoute` in config; takes effect on the next turn):
 >
 > - `ha` — stock Home Assistant turn (default; upstream behaviour).
-> - `poc_fallback` — Mercury POC first; if the POC demonstrably never
+> - `echomuse_mercury` — EchoMuse Mercury first; if the POC demonstrably never
 >   ran, the buffered utterance replays into a stock HA turn (staging).
 > - `poc_only` — Mercury POC only, no HA fallback (cutover).
 > - `shadow` — HA keeps answering; the POC receives the mic audio,

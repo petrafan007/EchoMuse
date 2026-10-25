@@ -365,7 +365,7 @@ DEFAULT_DEVICE_CONFIG = {
     # FORK (Mercury second sink): which voice pipeline answers a turn.
     # "ha" is stock upstream behaviour and the default for every existing
     # fleet — changing this line alone must never move a fleet, the same
-    # reason owwOnDevice's default is pinned by _fixup_v25. "poc_fallback"
+    # reason owwOnDevice's default is pinned by _fixup_v25. "echomuse_mercury"
     # routes to the POC with HA replay on POC failure (staging);
     # "poc_only" routes to the POC with no HA fallback (cutover);
     # "shadow" keeps HA answering and taps audio to the POC for log-only

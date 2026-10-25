@@ -10438,11 +10438,11 @@ function DeviceConfigForm({ config, onChange, disabled, sections, onScopeChange,
             Mercury POC running at the endpoint below. */}
         {subHeader('Mercury voice routing')}
         <div className="em-grid2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 var(--space-12)', ...inputStyle }}>
-          <Select label="Voice route" sub="which pipeline answers a turn: Home Assistant (stock), Mercury POC with HA fallback (staging), Mercury POC only (cutover — no HA fallback), or HA with a log-only POC shadow tap"
+          <Select label="Voice route" sub="which pipeline answers a turn: Home Assistant (stock), EchoMuse Mercury (Mercury first, HA fallback on failure — staging), Mercury POC only (cutover — no HA fallback), or HA with a log-only POC shadow tap"
             value={config.voiceRoute ?? 'ha'}
             options={[
               { value: 'ha', label: 'Home Assistant' },
-              { value: 'poc_fallback', label: 'POC + HA fallback' },
+              { value: 'echomuse_mercury', label: 'EchoMuse Mercury' },
               { value: 'poc_only', label: 'POC only' },
               { value: 'shadow', label: 'Shadow' },
             ]}

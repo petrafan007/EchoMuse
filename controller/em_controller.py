@@ -2943,7 +2943,7 @@ async def _run_voice_locked(device: Device, trigger_label: str = "unknown",
                 should_continue = False
                 try:
                     # FORK: Mercury voice routing. 'ha' is the stock path,
-                    # unchanged. 'poc_fallback'/'poc_only' run the POC turn
+                    # unchanged. 'echomuse_mercury'/'poc_only' run the POC turn
                     # (same on_thinking/post_turn_play closures, so LED,
                     # meter, barge-watcher and mic_stop behaviour are
                     # identical); 'shadow' runs the stock HA turn and taps
@@ -2963,13 +2963,13 @@ async def _run_voice_locked(device: Device, trigger_label: str = "unknown",
                         if tap_buf:
                             em_poc.spawn_shadow_post(
                                 device, bytes(tap_buf), turn_label)
-                    elif route in ("poc_fallback", "poc_only"):
+                    elif route in ("echomuse_mercury", "poc_only"):
                         async def _ha_turn():
                             return await esphome.trigger_voice_turn(
                                 device=device,
                                 on_thinking=on_thinking_esphome,
                                 post_turn_play=post_turn_play_esphome,
-                                trigger_label="poc-fallback",
+                                trigger_label="echomuse-mercury",
                                 preroll_discard=0,
                             )
                         should_continue = await em_poc.run_poc_turn(
@@ -2981,7 +2981,7 @@ async def _run_voice_locked(device: Device, trigger_label: str = "unknown",
                             ha_turn=_ha_turn,
                             put_frame=device.voice_queue.put,
                             sentinel_end=esphome.VAD_SENTINEL_END,
-                            allow_fallback=(route == "poc_fallback"),
+                            allow_fallback=(route == "echomuse_mercury"),
                         )
                     else:
                         should_continue = await esphome.trigger_voice_turn(
