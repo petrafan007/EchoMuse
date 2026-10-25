@@ -2734,6 +2734,9 @@ async def _run_voice_locked(device: Device, trigger_label: str = "unknown",
                 await _dismiss_by_speech(device)
                 return
             log.info(f"[{device.device_id}] Voice turn starting (esphome mode)")
+            # FORK: wake-wiring — pause HA media at turn start (POC routes
+            # only; best-effort fire-and-forget, never blocks the turn).
+            em_poc.spawn_session_start(device)
             device.listening = True
             await leds_listening(device)
             await _push_device_state(device)

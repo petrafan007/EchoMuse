@@ -362,6 +362,91 @@ def test_poc_turn_no_speech_never_calls_poc(monkeypatch):
     assert dev.turn_history[-1]["outcome"] == "no_speech"
 
 
+# ─── Session media pause (fork wake-wiring) ───────────────────────────────
+
+def test_session_start_gated_to_poc_routes(monkeypatch):
+    seen = []
+
+    async def fake_post_session(endpoint, path, session_id, device_id,
+                                timeout_s=em_poc.SESSION_POST_TIMEOUT_S):
+        seen.append((endpoint, path, session_id, device_id))
+        return {"paused": True, "player_state_before": "playing"}
+
+    monkeypatch.setattr(em_poc, "post_session", fake_post_session)
+
+    async def drive(dev):
+        em_poc.spawn_session_start(dev)
+        await asyncio.sleep(0.1)
+
+    dev = FakeDevice()
+    dev.voice_route = "ha"
+    run(drive(dev))
+    assert seen == []
+    dev.voice_route = "shadow"
+    run(drive(dev))
+    assert seen == []
+    dev.voice_route = "poc_only"
+    dev.listen_session = 42
+    run(drive(dev))
+    assert seen == [("http://127.0.0.1:8896", "/api/session_start",
+                     "42", "test-dot")]
+
+
+def test_poc_turn_no_speech_posts_session_end(monkeypatch):
+    dev = FakeDevice()
+    dev.voice_route = "poc_only"
+    ends = []
+    monkeypatch.setattr(em_poc, "spawn_session_end", lambda d: ends.append(d))
+
+    async def fake_post_turn(*args, **kwargs):
+        raise AssertionError("no-speech turn must never call the POC")
+
+    monkeypatch.setattr(em_poc, "post_turn", fake_post_turn)
+
+    async def ha_turn():
+        return False
+
+    outcome = run(_run_turn(
+        dev, True, ha_turn, [],
+        [SILENCE_FRAME, "vad_no_speech_timeout"]))
+    assert outcome is False
+    assert dev.turn_history[-1]["outcome"] == "no_speech"
+    assert ends == [dev]
+
+
+def test_poc_turn_ok_never_posts_session_end(monkeypatch):
+    dev = FakeDevice()
+    ends = []
+    monkeypatch.setattr(em_poc, "spawn_session_end", lambda d: ends.append(d))
+    outcome, _ha_calls, _played = _turn_with_audio(
+        monkeypatch, dev, _poc_result(audio_pcm=loud_frame()), True)
+    assert outcome is False
+    assert dev.turn_history[-1]["outcome"] == "ok"
+    assert ends == []
+
+
+def test_post_session_request_shape():
+    seen = []
+    srv, url = _serve(_handler_for(
+        200, {"paused": True, "player_state_before": "playing"}, seen))
+    try:
+        result = run(em_poc.post_session(
+            url, "/api/session_start", "42", "test-dot"))
+    finally:
+        srv.shutdown()
+    assert seen == [{"session_id": "42", "device": "test-dot"}]
+    assert result == {"paused": True, "player_state_before": "playing"}
+
+
+def test_post_session_http_error_raises():
+    srv, url = _serve(_handler_for(500, {"error": "boom"}))
+    try:
+        with pytest.raises(em_poc.PocError):
+            run(em_poc.post_session(url, "/api/session_end", "42", "test-dot"))
+    finally:
+        srv.shutdown()
+
+
 # ─── post_turn HTTP layer (stdlib server, aiohttp client) ───────────────────
 
 import base64 as _b64

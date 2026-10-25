@@ -137,6 +137,104 @@ def silence_end_s() -> float:
         return SILENCE_END_S
 
 
+# ─── Session media pause (fork wake-wiring) ───────────────────────────────
+
+# The POC pauses HA media at voice-session start (only if the player is
+# actually playing, so a later resume never restarts user-paused media)
+# and resumes it at session end (only if the POC paused it); a 90 s
+# auto-resume covers a session_end that never arrives. The fork therefore
+# POSTs /api/session_start at turn start and /api/session_end when a POC
+# turn ends before the POC ever ran (no-speech / cancelled / empty —
+# turns the POC did run own their resume via /api/turn, and stop turns
+# must stay stopped, so neither posts a session_end).
+#
+# These calls must NEVER break, delay, or fail a voice turn: short
+# timeout, every failure swallowed to a log line, and both spawns are
+# fire-and-forget via em_tasks.spawn — the turn loop never awaits them.
+# They reuse poc_endpoint() exactly like post_turn: no new URL is
+# hardcoded anywhere. Gated to the POC routes: HA and shadow turns keep
+# their stock media behaviour untouched.
+SESSION_POST_TIMEOUT_S = 2.0
+
+POC_SESSION_ROUTES = ("echomuse_mercury", "poc_only")
+
+
+def session_id_for(device) -> str:
+    """The POC session id for this turn: the private session, else fresh."""
+    sid = getattr(device, "listen_session", None)
+    return str(sid) if sid is not None else str(uuid.uuid4())
+
+
+async def post_session(endpoint: str, path: str, session_id: str,
+                       device_id: str,
+                       timeout_s: float = SESSION_POST_TIMEOUT_S) -> dict:
+    """POST one session lifecycle call. Raises on any failure.
+
+    Callers swallow: a failed session post is a log line, never a turn
+    failure. Returns the POC's JSON object (booleans only are logged).
+    """
+    try:
+        import aiohttp
+    except ImportError as e:
+        raise PocError(f"aiohttp unavailable for POC session call: {e}")
+    payload = {"session_id": session_id, "device": device_id}
+    try:
+        timeout = aiohttp.ClientTimeout(total=timeout_s)
+        async with aiohttp.ClientSession(timeout=timeout) as sess:
+            async with sess.post(endpoint + path, json=payload) as resp:
+                if resp.status < 200 or resp.status >= 300:
+                    raise PocError(f"POC {path} HTTP {resp.status}")
+                try:
+                    data = await resp.json()
+                except Exception as e:
+                    raise PocError(f"POC {path} reply is not JSON: {e}")
+    except PocError:
+        raise
+    except asyncio.TimeoutError as e:
+        raise PocError(f"POC {path} timed out after {timeout_s}s: {e}")
+    except Exception as e:
+        raise PocError(f"POC {path} failed: {e}")
+    if not isinstance(data, dict):
+        raise PocError(f"POC {path} reply is not a JSON object")
+    return data
+
+
+def _spawn_session(device, path: str) -> None:
+    device_id = getattr(device, "device_id", "unknown")
+    if resolve_route(device) not in POC_SESSION_ROUTES:
+        return
+    endpoint = poc_endpoint(device)
+    session_id = session_id_for(device)
+
+    async def _post() -> None:
+        try:
+            result = await post_session(endpoint, path, session_id, device_id)
+            if path == "/api/session_start":
+                log.info(f"[poc] session_start {device_id}: "
+                         f"paused={result.get('paused')} "
+                         f"state_before={result.get('player_state_before')}")
+            else:
+                log.info(f"[poc] session_end {device_id}: "
+                         f"resumed={result.get('resumed')}")
+        except Exception as e:
+            log.warning(f"[poc] {path} {device_id} failed "
+                        f"(best-effort, turn unaffected): {e}")
+    try:
+        em_tasks.spawn(_post())
+    except RuntimeError as e:
+        log.warning(f"[poc] {path} not scheduled (no loop): {e}")
+
+
+def spawn_session_start(device) -> None:
+    """Fire-and-forget POC /api/session_start for a POC-route turn."""
+    _spawn_session(device, "/api/session_start")
+
+
+def spawn_session_end(device) -> None:
+    """Fire-and-forget POC /api/session_end for a POC-route turn."""
+    _spawn_session(device, "/api/session_end")
+
+
 # ─── POC client ─────────────────────────────────────────────────────────────
 
 class PocError(Exception):
@@ -477,6 +575,12 @@ async def run_poc_turn(device, *, on_thinking, post_turn_play,
             "stt_text": "", "decide_verdict": None,
             "decide_confidence": None, "engine": None, "actions": [],
         })
+        # FORK: wake-wiring — the POC turn never ran, so nothing on the
+        # POC side will resume the media this session_start paused: end
+        # the session now so media returns in well under the POC's 90 s
+        # auto-resume. Only this branch: stop turns must stay stopped,
+        # and turns the POC did run own their resume via /api/turn.
+        spawn_session_end(device)
         return False
     # Thinking transition AFTER capture: for private listening this closes
     # the session (listen_close); pre-closing would make on_thinking take
