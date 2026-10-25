@@ -518,6 +518,16 @@ async def run_poc_turn(device, *, on_thinking, post_turn_play,
         })
         return False
     if result.stop:
+        # Unconditional halt: the barge path normally cancels playback at
+        # turn start, but a stop turn that began without barge (device wake
+        # without controller barge detection) must still silence any
+        # in-progress audio. Best-effort: a flush failure must never break
+        # the stop turn itself. cancel_event is cleared at next turn start.
+        try:
+            device.cancel_event.set()
+            await device.send_control({"type": "speaker_flush"})
+        except Exception as e:
+            log.warning(f"[poc] {device_id}: stop flush failed ({e})")
         await _record_turn(device, {
             "ts": time.time(), "trigger": trigger_label,
             "outcome": "stop", "backend": "poc", "wake_score": wake_score,
