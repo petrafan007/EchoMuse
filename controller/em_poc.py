@@ -365,13 +365,18 @@ async def post_turn(endpoint: str, pcm: bytes, session_id: str,
 # ─── Capture ────────────────────────────────────────────────────────────────
 
 def rms_speech(chunk: bytes, floor: float) -> bool:
-    """The HA path's speech bar, without numpy: RMS >= max(3x floor, 0.004)."""
+    """The HA path's speech bar, without numpy: RMS >= max(2x floor, 0.004).
+
+    Bar lowered 3x -> 2x floor (Oct 24 2026 ASR improvement): at the
+    observed floor 0.0275 the old bar was 0.0825 RMS and clipped quiet
+    word onsets ("time is it", "the lamp off"); the new bar is 0.055.
+    """
     if len(chunk) < 2:
         return False
     n = len(chunk) // 2
     samples = struct.unpack(f"<{n}h", chunk[:n * 2])
     mean_sq = sum((s / 32768.0) ** 2 for s in samples) / n
-    return mean_sq ** 0.5 >= max(3.0 * floor, 0.004)
+    return mean_sq ** 0.5 >= max(2.0 * floor, 0.004)
 
 
 async def capture_turn(device, preroll_discard: int,
