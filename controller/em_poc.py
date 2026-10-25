@@ -265,7 +265,7 @@ def failure_replayable(exc: Exception) -> bool:
 
 class PocResult:
     def __init__(self, transcript, decide_verdict, decide_confidence,
-                 actions, engine, stop, audio_pcm):
+                 actions, engine, stop, audio_pcm, followup=False):
         self.transcript = transcript
         self.decide_verdict = decide_verdict
         self.decide_confidence = decide_confidence
@@ -273,6 +273,7 @@ class PocResult:
         self.engine = engine
         self.stop = stop
         self.audio_pcm = audio_pcm
+        self.followup = followup
 
 
 def build_wav(pcm: bytes, rate: int = 16000) -> bytes:
@@ -359,6 +360,7 @@ async def post_turn(endpoint: str, pcm: bytes, session_id: str,
         engine=data.get("engine"),
         stop=bool(data.get("stop")),
         audio_pcm=audio_pcm,
+        followup=bool(data.get("followup")),
     )
 
 
@@ -553,7 +555,8 @@ async def run_poc_turn(device, *, on_thinking, post_turn_play,
                        trigger_label: str, preroll_discard: int,
                        ha_turn, put_frame, sentinel_end: str,
                        allow_fallback: bool) -> bool:
-    """Run one POC turn. Returns should_continue (always False in v1).
+    """Run one POC turn. Returns should_continue: True when the POC reply
+    is a follow-up question (its followup flag), else False.
 
     Callbacks (all supplied by _run_voice_locked, so this module never
     imports em_controller):
@@ -672,5 +675,6 @@ async def run_poc_turn(device, *, on_thinking, post_turn_play,
         "decide_verdict": result.decide_verdict,
         "decide_confidence": result.decide_confidence,
         "engine": result.engine, "actions": result.actions,
+        "followup": result.followup,
     })
-    return False
+    return result.followup
