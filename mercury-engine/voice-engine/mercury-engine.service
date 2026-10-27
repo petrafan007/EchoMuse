@@ -1,0 +1,14 @@
+[Unit]
+Description=Mercury Engine voice service (LAN-only Engine UI)
+After=network.target
+
+[Service]
+Type=simple
+User=user
+WorkingDirectory=/home/user/mercury-engine
+ExecStart=/home/user/mercury-engine/.venv/bin/python /home/user/mercury-engine/server.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

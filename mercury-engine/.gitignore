@@ -1,0 +1,15 @@
+engine_config.json
+poc_config.json
+*.bak
+*.bak-*
+*.log
+*.wav
+*.webm
+*.mp3
+__pycache__/
+voices/
+tls/
+*.pem
+*.key
+clips/
+*.muse-github-snapshot-sync.json

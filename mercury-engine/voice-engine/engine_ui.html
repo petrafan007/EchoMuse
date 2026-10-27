@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EchoMuse Mercury</title>
+<style>
+:root{
+  --bg:#0e1013; --card:#171a20; --card2:#1e232c; --border:#262b34;
+  --text:#e6e8eb; --muted:#9aa3b2; --accent:#2f6fed; --accent2:#4f8cff;
+  --green:#35c26e; --red:#e5484d; --talk:#2e9e5b;
+}
+*{box-sizing:border-box}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;max-width:780px;margin:0 auto;padding:28px 16px 48px;background:var(--bg);color:var(--text);line-height:1.5}
+h1{font-size:1.6em;margin:0 0 4px}
+.subtitle{color:var(--muted);margin:0 0 8px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin:18px 0;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.card h2{font-size:.82em;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+label{display:block;margin-top:14px;font-weight:600;font-size:.92em}
+input[type=password],input[type=text],select{width:100%;padding:10px 12px;margin-top:6px;background:#10131a;color:var(--text);border:1px solid #2c333f;border-radius:8px;font-size:1em}
+input:focus,select:focus{outline:none;border-color:var(--accent2)}
+select:disabled{opacity:.45}
+button{padding:10px 18px;margin:10px 10px 0 0;border:0;border-radius:9px;cursor:pointer;font-size:1em;font-weight:600;background:var(--accent);color:#fff}
+button:hover{filter:brightness(1.1)}
+#talk{background:var(--talk)} #stopBtn{background:var(--red)}
+#testBtn{background:#7a5af8}
+.note{color:var(--muted);font-size:.88em;margin-top:8px}
+.result{margin-top:12px;font-size:.92em;color:#c9d1d9}
+.keystate{font-size:.85em;color:var(--muted);margin-left:6px}
+.keystate.set{color:var(--green);font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.tile .label{font-size:.78em;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.tile .value{font-size:.95em;margin-top:2px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.dot.ok{background:var(--green)} .dot.off{background:#5a636f} .dot.bad{background:var(--red)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row button{margin:10px 0 0}
+audio{width:100%;margin-top:12px}
+#log{white-space:pre-wrap;background:#0b0d10;padding:12px;border-radius:8px;min-height:6em;font-family:monospace;font-size:.85em;overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<h1>EchoMuse Mercury</h1>
+<p class="subtitle">Fresh direct voice client. No HA voice pipeline, no Dot, no wake word yet. Push-to-talk only. Audio plays in your browser. Mercury Engine.</p>
+
+<div class="card">
+<h2>Status</h2>
+<div class="tiles" id="statusTiles"></div>
+<div class="row"><button onclick="refreshStatus()">Refresh status</button><span class="note" id="statusUpdated"></span></div>
+</div>
+
+<div class="card">
+<h2>Keys</h2>
+<p class="note">Fill the fields below yourself. They are stored only in poc_config.json on this machine, never shown back, never logged.</p>
+<label>Inception API key</label>
+<input type="password" id="inception_key" autocomplete="off" onfocus="unmaskField(this)" oninput="unmaskField(this)">
+<span id="inception_key_state" class="keystate"></span>
+<label>Home Assistant long-lived access token</label>
+<input type="password" id="ha_token" autocomplete="off" onfocus="unmaskField(this)" oninput="unmaskField(this)">
+<span id="ha_token_state" class="keystate"></span>
+<label>Google Cloud API key (restricted to the Text-to-Speech API)</label>
+<input type="password" id="google_api_key" autocomplete="off" onfocus="unmaskField(this)" oninput="unmaskField(this)">
+<span id="google_api_key_state" class="keystate"></span>
+<label>Groq API key (free tier, for faster cloud transcription)</label>
+<input type="password" id="groq_api_key" autocomplete="off" onfocus="unmaskField(this)" oninput="unmaskField(this)">
+<span id="groq_api_key_state" class="keystate"></span>
+<label>Voice</label>
+<select id="voice_choice" onchange="updateVoicePickerState()">
+<option value="piper" selected>Piper (local, free)</option>
+<option value="google">Google WaveNet (free tier)</option>
+</select>
+<p class="note">Piper (local, free) is the default. Google WaveNet uses your free-tier key and falls back to Piper automatically on any error.</p>
+<label>Google WaveNet voice</label>
+<select id="google_voice_name">
+<option value="en-US-Wavenet-A">en-US-Wavenet-A (Male)</option>
+<option value="en-US-Wavenet-B">en-US-Wavenet-B (Male)</option>
+<option value="en-US-Wavenet-C">en-US-Wavenet-C (Female)</option>
+<option value="en-US-Wavenet-D" selected>en-US-Wavenet-D (Male)</option>
+<option value="en-US-Wavenet-E">en-US-Wavenet-E (Female)</option>
+<option value="en-US-Wavenet-F">en-US-Wavenet-F (Female)</option>
+<option value="en-US-Wavenet-G">en-US-Wavenet-G (Female)</option>
+<option value="en-US-Wavenet-H">en-US-Wavenet-H (Female)</option>
+<option value="en-US-Wavenet-I">en-US-Wavenet-I (Male)</option>
+<option value="en-US-Wavenet-J">en-US-Wavenet-J (Male)</option>
+</select>
+<p class="note">Applies only when Voice is Google WaveNet. WaveNet voices only — Neural2, Chirp, and Studio voices are never offered.</p>
+
+<h2 style="margin-top:22px">Test voice</h2>
+<p class="note">Pick a voice above, hit Test voice, and listen right here. Repeat for each voice. Audio plays in this browser only — never on the Dot.</p>
+<label>Sample phrase</label>
+<input type="text" id="testPhrase" maxlength="1000" value="Hello, this is your Mercury voice assistant.">
+<div class="row"><button id="testBtn" onclick="testVoice()">Test voice</button><span class="result" id="testResult"></span></div>
+<audio id="testPlayer" controls></audio>
+
+<div class="row"><button onclick="saveKeys()">Save keys</button></div>
+<div id="keyResult" class="result"></div>
+</div>
+
+<div class="card">
+<h2>Talk</h2>
+<div class="row">
+<button id="talk" onmousedown="startRec(event)" onmouseup="stopRec(event)" ontouchstart="startRec(event)" ontouchend="stopRec(event)">Hold to talk</button>
+<button id="stopBtn" onclick="doStop()">STOP</button>
+</div>
+<label>Or type a command instead of talking</label>
+<input type="text" id="typed" placeholder="Type a command">
+<div class="row"><button onclick="sendTyped()">Send typed command</button></div>
+<div id="talkResult" class="result"></div>
+<audio id="player" controls></audio>
+</div>
+
+<div class="card">
+<h2>Log</h2>
+<div id="log"></div>
+</div>
+
+<script>
+let rec=null, chunks=[], stopT0=0;
+function log(m){document.getElementById('log').textContent+=m+"\n";}
+const MASKED='••••••••';
+function tile(label,value,state){
+  const d=document.createElement('div'); d.className='tile';
+  const l=document.createElement('div'); l.className='label'; l.textContent=label;
+  const v=document.createElement('div'); v.className='value';
+  const dot=document.createElement('span'); dot.className='dot '+(state||'off');
+  v.appendChild(dot); v.appendChild(document.createTextNode(value));
+  d.appendChild(l); d.appendChild(v); return d;
+}
+function renderTiles(j){
+  const c=document.getElementById('statusTiles'); c.textContent='';
+  c.appendChild(tile('Service', j.ok ? 'Healthy' : 'Down', j.ok ? 'ok' : 'bad'));
+  c.appendChild(tile('Whisper', j.whisper_ready ? 'Ready' : 'Not ready', j.whisper_ready ? 'ok' : 'off'));
+  c.appendChild(tile('Piper', j.piper_ready ? 'Ready' : 'Not ready', j.piper_ready ? 'ok' : 'off'));
+  c.appendChild(tile('Piper voice', j.voice || '—', j.voice ? 'ok' : 'off'));
+  c.appendChild(tile('Inception key', j.inception_key_set ? '✓ Set' : 'Not set', j.inception_key_set ? 'ok' : 'off'));
+  c.appendChild(tile('HA token', j.ha_token_set ? '✓ Set' : 'Not set', j.ha_token_set ? 'ok' : 'off'));
+  c.appendChild(tile('Google key', j.google_api_key_set ? '✓ Set' : 'Not set', j.google_api_key_set ? 'ok' : 'off'));
+  c.appendChild(tile('Groq key', j.groq_api_key_set ? '\u2713 Set' : 'Not set', j.groq_api_key_set ? 'ok' : 'off'));
+  const voice = j.voice_choice === 'google' ? ('Google WaveNet — ' + (j.google_voice_name || 'en-US-Wavenet-D')) : 'Piper (local)';
+  c.appendChild(tile('Voice', voice, 'ok'));
+  document.getElementById('statusUpdated').textContent='Updated ' + new Date().toLocaleTimeString();
+}
+async function refreshStatus(){
+  try{
+    const r=await fetch('/api/status'); const j=await r.json();
+    renderTiles(j); applyKeyStates(j);
+  }catch(err){
+    const c=document.getElementById('statusTiles'); c.textContent='';
+    c.appendChild(tile('Service', 'Unreachable', 'bad'));
+  }
+}
+function applyKeyStates(j){
+  const fields=[['inception_key','inception_key_set'],['ha_token','ha_token_set'],['google_api_key','google_api_key_set'],['groq_api_key','groq_api_key_set']];
+  for(const [id,flag] of fields){
+    const el=document.getElementById(id); const st=document.getElementById(id+'_state');
+    if(j[flag]){ el.value=MASKED; el.dataset.masked='true'; st.textContent='✓ Set'; st.className='keystate set'; }
+    else { el.value=''; el.dataset.masked=''; st.textContent='Not set'; st.className='keystate'; }
+  }
+  document.getElementById('voice_choice').value=j.voice_choice||'piper';
+  document.getElementById('google_voice_name').value=j.google_voice_name||'en-US-Wavenet-D';
+  updateVoicePickerState();
+}
+function updateVoicePickerState(){
+  document.getElementById('google_voice_name').disabled=(document.getElementById('voice_choice').value!=='google');
+}
+function unmaskField(el){
+  if(el.dataset.masked==='true'){ el.value=''; el.dataset.masked=''; }
+}
+async function saveKeys(){
+  // Only fields the user actually typed into are sent. A field
+  // still showing its masked placeholder is skipped, so saving
+  // NEVER blanks a stored key. Empty fields are likewise skipped
+  // (the server also ignores empty values as a second layer).
+  const body={};
+  const fields=[['inception_key','inception_key'],['ha_token','ha_token'],['google_api_key','google_api_key'],['groq_api_key','groq_api_key']];
+  for(const [id,key] of fields){
+    const el=document.getElementById(id);
+    if(el.dataset.masked!=='true' && el.value) body[key]=el.value;
+  }
+  const v=document.getElementById('voice_choice').value;
+  if(v) body.voice_choice=v;
+  const gv=document.getElementById('google_voice_name').value;
+  if(gv) body.google_voice_name=gv;
+  const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json();
+  const fmt=(b)=>b?'Set':'Not set';
+  document.getElementById('keyResult').textContent='Saved. Inception key: '+fmt(j.inception_key_set)+', HA token: '+fmt(j.ha_token_set)+', Google key: '+fmt(j.google_api_key_set)+', Groq key: '+fmt(j.groq_api_key_set)+', voice: '+j.voice_choice+', google voice: '+(j.google_voice_name||'en-US-Wavenet-D');
+  refreshStatus();
+}
+async function testVoice(){
+  // Test the CURRENTLY selected voice through the normal TTS path
+  // (/api/tts: Google WaveNet when chosen, Piper fallback on any
+  // Google failure). Saves only the voice selection first, so the
+  // dropdown choice is what gets heard — no key field is touched.
+  // Audio plays in this browser only, never on the Dot.
+  const res=document.getElementById('testResult');
+  const phrase=document.getElementById('testPhrase').value.trim() || 'Hello, this is your Mercury voice assistant.';
+  const v=document.getElementById('voice_choice').value;
+  const gv=document.getElementById('google_voice_name').value;
+  try{
+    res.textContent='Saving voice selection…';
+    await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({voice_choice:v,google_voice_name:gv})});
+    document.getElementById('player').pause();
+    res.textContent='Synthesizing…';
+    const r=await fetch('/api/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:phrase})});
+    if(!r.ok){ res.textContent='Test failed (TTS error).'; return; }
+    const blob=await r.blob();
+    const url=URL.createObjectURL(blob);
+    const tp=document.getElementById('testPlayer'); tp.src=url; tp.play();
+    const via=(r.headers.get('Content-Type')||'').includes('mpeg') ? 'Google WaveNet' : 'Piper (local)';
+    res.textContent='Playing via ' + via + ' — voice: ' + (v==='google' ? gv : 'Piper (local)') + '.';
+  }catch(err){ res.textContent='Test failed: '+err; }
+}
+async function startRec(e){e.preventDefault(); chunks=[];
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    rec=new MediaRecorder(stream); rec.ondataavailable=ev=>{if(ev.data.size)chunks.push(ev.data);};
+    rec.onstop=async()=>{
+      const blob=new Blob(chunks,{type:rec.mimeType||'audio/webm'});
+      log('Recorded '+blob.size+' bytes, transcribing…');
+      const r=await fetch('/api/transcribe',{method:'POST',body:blob});
+      const j=await r.json();
+      if(j.text){log('Heard: '+j.text); handleAsk(j.text);} else {log('Transcription failed: '+(j.error||'unknown'));}
+      stream.getTracks().forEach(t=>t.stop());
+    };
+    rec.start(); log('Listening… release the button to send.');
+  }catch(err){log('Mic error: '+err);}
+}
+function stopRec(e){e.preventDefault(); if(rec&&rec.state!=='inactive')rec.stop();}
+async function sendTyped(){const t=document.getElementById('typed').value.trim(); if(t)handleAsk(t);}
+async function handleAsk(text){
+  const r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+  const j=await r.json();
+  const route = j.route ? (j.route.route + ' (' + j.route.source + ')') : '—';
+  document.getElementById('talkResult').textContent='Action: ' + (j.action || j.error || '—') + ' · Route: ' + route;
+  if(j.action==='stop'){log('STOP action (silent).'); return;}
+  if(j.reply_text){log('Reply: '+j.reply_text); speak(j.reply_text);}
+  else log('No reply text (see result above).');
+}
+async function speak(text){
+  const r=await fetch('/api/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+  if(!r.ok){log('TTS failed.'); return;}
+  const blob=await r.blob(); const url=URL.createObjectURL(blob);
+  const p=document.getElementById('player'); p.src=url; p.play();
+}
+async function doStop(){
+  const p=document.getElementById('player'); const tp=document.getElementById('testPlayer');
+  const t0=performance.now();
+  p.pause(); p.currentTime=0; tp.pause(); tp.currentTime=0;
+  const localMs=Math.round(performance.now()-t0);
+  const r=await fetch('/api/stop',{method:'POST'});
+  const j=await r.json();
+  log('STOP: local audio halted in '+localMs+' ms. Server stopped: '+(j.stopped ? 'yes' : 'no')+'.');
+}
+refreshStatus();
+</script>
+</body>
+</html>

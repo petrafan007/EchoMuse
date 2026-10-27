@@ -1,0 +1,34 @@
+# Ask-Muse voice-loop automations (extracted, webhook ID redacted)
+- id: ask_muse_voice
+  alias: Ask Muse (voice)
+  description: "Voice route to Muse: an 'ask Muse ...' sentence on the Zyra pipeline writes the question to the HA log (ASK_CLAUDE marker) for Muse's watcher. No spoken acknowledgment."
+  mode: queued
+  triggers:
+    - trigger: conversation
+      command:
+        - "ask Muse {question}"
+        - "ask Muse to {question}"
+        - "tell Muse {question}"
+        - "tell Muse to {question}"
+  actions:
+    - action: system_log.write
+      data:
+        message: "ASK_CLAUDE|{{ trigger.slots.question }}"
+        level: warning
+- id: ask_muse_webhook
+  alias: Ask Muse (webhook relay)
+  description: "Relay for the voice brain: Mercury's ask_claude function POSTs the question here; it is written to the HA log with the ASK_CLAUDE marker for Muse's watcher."
+  mode: queued
+  triggers:
+    - trigger: webhook
+      webhook_id: YOUR_WEBHOOK_ID
+      allowed_methods:
+        - POST
+      local_only: true
+  actions:
+    - action: system_log.write
+      data:
+        message: "ASK_CLAUDE|{{ trigger.json.question }}"
+        level: warning
+
+

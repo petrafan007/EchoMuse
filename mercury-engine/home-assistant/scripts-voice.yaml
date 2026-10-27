@@ -1,0 +1,64 @@
+# Voice-related scripts (extracted fragments)
+set_reminder:
+  alias: Set Reminder
+  mode: single
+  fields:
+    message:
+      description: What to remind the user about
+      example: Take the chicken out of the freezer
+    minutes:
+      description: Minutes until the reminder speaks
+      example: 20
+  sequence:
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.reminder_message
+      data:
+        value: "{{ message }}"
+    - action: timer.start
+      target:
+        entity_id: timer.reminder_timer
+      data:
+        duration: "{{ (minutes | int) // 60 }}:{{ '0' if ((minutes | int) - ((minutes | int) // 60) * 60) < 10 else '' }}{{ (minutes | int) - ((minutes | int) // 60) * 60 }}:00"
+play_sleep_sounds:
+  alias: Play Sleep Sounds
+  mode: single
+  fields:
+    sound:
+      description: pink or white noise
+      example: pink
+  sequence:
+    - action: media_player.play_media
+      target:
+        entity_id: media_player.office_voice_assistant
+      data:
+        media_content_type: music
+        media_content_id: "http://YOUR_THINCLIENT_IP:8123/local/sounds/{{ sound | default('pink') }}-noise.mp3"
+stop_sleep_sounds:
+  alias: Stop Sleep Sounds
+  mode: single
+  sequence:
+    - action: media_player.media_stop
+      target:
+        entity_id: media_player.office_voice_assistant
+send_camera_snapshot:
+  alias: Send Camera Snapshot
+  mode: single
+  fields:
+    camera:
+      description: Which camera (garage, front_door, patio, driveway)
+      example: front_door
+  variables:
+    snap_file: "{{ camera }}_{{ now().timestamp() | int }}.jpg"
+  sequence:
+    - action: camera.snapshot
+      target:
+        entity_id: "camera.{{ camera }}"
+      data:
+        filename: "/config/www/snapshots/{{ snap_file }}"
+    - action: notify.notify
+      data:
+        title: "Camera snapshot: {{ camera }}"
+        message: "Snapshot from the {{ camera }} camera."
+        data:
+          image: "/local/snapshots/{{ snap_file }}"

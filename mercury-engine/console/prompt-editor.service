@@ -1,0 +1,14 @@
+[Unit]
+Description=Prompt editor service for Home Assistant Prompts tab (LAN only)
+After=network.target
+
+[Service]
+Type=simple
+User=user
+WorkingDirectory=/home/user/prompt-editor
+ExecStart=/usr/bin/python3 /home/user/prompt-editor/service.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

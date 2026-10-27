@@ -1,0 +1,733 @@
+{
+  "version": 1,
+  "commands": [
+    {
+      "id": "lights_on",
+      "label": "Lights on",
+      "kind": "do",
+      "device": "Lights",
+      "phrases": [
+        "turn the lights on",
+        "turn on the lights",
+        "lights on",
+        "switch the lights on"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "light",
+          "service": "turn_on",
+          "entity_id": "light.lights",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "lights_off",
+      "label": "Lights off",
+      "kind": "do",
+      "device": "Lights",
+      "phrases": [
+        "turn the lights off",
+        "turn off the lights",
+        "lights off",
+        "switch the lights off"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "light",
+          "service": "turn_off",
+          "entity_id": "light.lights",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "lamp_on",
+      "label": "Lamp on",
+      "kind": "do",
+      "device": "Lamp",
+      "phrases": [
+        "turn the lamp on",
+        "turn on the lamp",
+        "lamp on"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "switch",
+          "service": "turn_on",
+          "entity_id": "switch.lamp",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "lamp_off",
+      "label": "Lamp off",
+      "kind": "do",
+      "device": "Lamp",
+      "phrases": [
+        "turn the lamp off",
+        "turn off the lamp",
+        "lamp off"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "switch",
+          "service": "turn_off",
+          "entity_id": "switch.lamp",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "lamp_led_on",
+      "label": "Lamp LED on",
+      "kind": "do",
+      "device": "Lamp",
+      "phrases": [
+        "turn the lamp led on",
+        "lamp led on"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "switch",
+          "service": "turn_on",
+          "entity_id": "switch.lamp_led",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "lamp_led_off",
+      "label": "Lamp LED off",
+      "kind": "do",
+      "device": "Lamp",
+      "phrases": [
+        "turn the lamp led off",
+        "lamp led off"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "switch",
+          "service": "turn_off",
+          "entity_id": "switch.lamp_led",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "vacuum_start",
+      "label": "Vacuum start",
+      "kind": "do",
+      "device": "Vacuum",
+      "phrases": [
+        "start the vacuum",
+        "start vacuuming",
+        "vacuum start"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "vacuum",
+          "service": "start",
+          "entity_id": "vacuum.s8",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "vacuum_pause",
+      "label": "Vacuum pause",
+      "kind": "do",
+      "device": "Vacuum",
+      "phrases": [
+        "stop the vacuum",
+        "vacuum stop",
+        "pause the vacuum"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "vacuum",
+          "service": "pause",
+          "entity_id": "vacuum.s8",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "vacuum_dock",
+      "label": "Vacuum dock",
+      "kind": "do",
+      "device": "Vacuum",
+      "phrases": [
+        "send the vacuum home",
+        "vacuum dock",
+        "dock the vacuum"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "vacuum",
+          "service": "return_to_base",
+          "entity_id": "vacuum.s8",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "timer_set",
+      "label": "Timer set",
+      "kind": "do",
+      "device": "Timer",
+      "phrases": [],
+      "patterns": [
+        "set a timer for {minutes} minutes",
+        "set a timer for {minutes} minute",
+        "set timer for {minutes} minutes",
+        "start a timer for {minutes} minutes",
+        "set a timer for {minutes}"
+      ],
+      "calls": [
+        {
+          "domain": "timer",
+          "service": "start",
+          "entity_id": "timer.office_timer",
+          "data": {
+            "duration": "{duration}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "alarm_set",
+      "label": "Alarm set",
+      "kind": "do",
+      "device": "Alarm",
+      "phrases": [],
+      "patterns": [
+        "set an alarm for {time}",
+        "set alarm for {time}",
+        "wake me up at {time}"
+      ],
+      "calls": [
+        {
+          "domain": "input_datetime",
+          "service": "set_datetime",
+          "entity_id": "input_datetime.alarm_time",
+          "data": {
+            "time": "{time}"
+          }
+        },
+        {
+          "domain": "input_boolean",
+          "service": "turn_on",
+          "entity_id": "input_boolean.alarm_enabled",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "alarm_cancel",
+      "label": "Alarm cancel",
+      "kind": "do",
+      "device": "Alarm",
+      "phrases": [
+        "cancel the alarm",
+        "turn off the alarm",
+        "disable the alarm"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "input_boolean",
+          "service": "turn_off",
+          "entity_id": "input_boolean.alarm_enabled",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "sleep_pink",
+      "label": "Play pink noise",
+      "kind": "do",
+      "device": "Sleep sounds",
+      "phrases": [
+        "play pink noise",
+        "play the pink noise"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "script",
+          "service": "turn_on",
+          "entity_id": "script.play_sleep_sounds",
+          "data": {
+            "sound": "pink"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sleep_white",
+      "label": "Play white noise",
+      "kind": "do",
+      "device": "Sleep sounds",
+      "phrases": [
+        "play white noise",
+        "play the white noise"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "script",
+          "service": "turn_on",
+          "entity_id": "script.play_sleep_sounds",
+          "data": {
+            "sound": "white"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sleep_stop",
+      "label": "Stop sleep sounds",
+      "kind": "do",
+      "device": "Sleep sounds",
+      "phrases": [
+        "stop the sleep sounds",
+        "stop sleep sounds",
+        "turn off the sleep sounds"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "script",
+          "service": "turn_on",
+          "entity_id": "script.stop_sleep_sounds",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "goodnight",
+      "label": "Goodnight",
+      "kind": "do",
+      "device": "Routines",
+      "phrases": [
+        "goodnight",
+        "good night"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "script",
+          "service": "turn_on",
+          "entity_id": "script.goodnight",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "movie_night",
+      "label": "Movie night",
+      "kind": "do",
+      "device": "Routines",
+      "phrases": [
+        "movie night"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "script",
+          "service": "turn_on",
+          "entity_id": "script.movie_night",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "morning_briefing",
+      "label": "Morning briefing",
+      "kind": "do",
+      "device": "Routines",
+      "phrases": [
+        "morning briefing"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "script",
+          "service": "turn_on",
+          "entity_id": "script.morning_briefing",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "snapshot",
+      "label": "Send camera snapshot",
+      "kind": "do",
+      "device": "Cameras",
+      "phrases": [],
+      "patterns": [
+        "send a snapshot of the {camera}",
+        "send me a snapshot of the {camera}"
+      ],
+      "calls": [
+        {
+          "domain": "script",
+          "service": "turn_on",
+          "entity_id": "script.send_camera_snapshot",
+          "data": {
+            "camera": "{camera}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "reminder_set",
+      "label": "Set reminder",
+      "kind": "do",
+      "device": "Reminders",
+      "phrases": [],
+      "patterns": [
+        "remind me to {message} in {minutes} minutes",
+        "remind me in {minutes} minutes to {message}",
+        "set a reminder for {message} in {minutes} minutes"
+      ],
+      "calls": [
+        {
+          "domain": "script",
+          "service": "turn_on",
+          "entity_id": "script.set_reminder",
+          "data": {
+            "message": "{message}",
+            "minutes": "{minutes}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "frigate_alerts_on",
+      "label": "Frigate voice alerts on",
+      "kind": "do",
+      "device": "Frigate",
+      "phrases": [
+        "turn frigate voice alerts on"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "input_boolean",
+          "service": "turn_on",
+          "entity_id": "input_boolean.frigate_voice_alerts",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "frigate_alerts_off",
+      "label": "Frigate voice alerts off",
+      "kind": "do",
+      "device": "Frigate",
+      "phrases": [
+        "turn frigate voice alerts off"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "input_boolean",
+          "service": "turn_off",
+          "entity_id": "input_boolean.frigate_voice_alerts",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "kia_climate_on",
+      "label": "Kia climate on",
+      "kind": "do",
+      "device": "Kia K5",
+      "phrases": [
+        "turn the Kia climate on",
+        "turn on the Kia climate"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "switch",
+          "service": "turn_on",
+          "entity_id": "switch.driveway_my_k5_climate",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "kia_climate_off",
+      "label": "Kia climate off",
+      "kind": "do",
+      "device": "Kia K5",
+      "phrases": [
+        "turn the Kia climate off",
+        "turn off the Kia climate"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "switch",
+          "service": "turn_off",
+          "entity_id": "switch.driveway_my_k5_climate",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "kia_lock",
+      "label": "Lock the Kia",
+      "kind": "do",
+      "device": "Kia K5",
+      "phrases": [
+        "lock the Kia",
+        "lock the car"
+      ],
+      "patterns": [],
+      "calls": [
+        {
+          "domain": "lock",
+          "service": "lock",
+          "entity_id": "lock.my_k5_door_lock",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "id": "ask_lights",
+      "label": "Are the lights on",
+      "kind": "ask",
+      "device": "Lights",
+      "phrases": [
+        "are the lights on",
+        "are the lights off"
+      ],
+      "patterns": [],
+      "answer": "The lights are {lights}.",
+      "entities": {
+        "lights": "light.lights"
+      }
+    },
+    {
+      "id": "ask_lamp",
+      "label": "Is the lamp on",
+      "kind": "ask",
+      "device": "Lamp",
+      "phrases": [
+        "is the lamp on",
+        "is the lamp off"
+      ],
+      "patterns": [],
+      "answer": "The lamp is {lamp}.",
+      "entities": {
+        "lamp": "switch.lamp"
+      }
+    },
+    {
+      "id": "ask_vacuum",
+      "label": "Vacuum status",
+      "kind": "ask",
+      "device": "Vacuum",
+      "phrases": [
+        "is the vacuum running",
+        "is the vacuum done",
+        "what is the vacuum doing"
+      ],
+      "patterns": [],
+      "answer": "The vacuum is {vacuum}.",
+      "entities": {
+        "vacuum": "vacuum.s8"
+      }
+    },
+    {
+      "id": "ask_timer",
+      "label": "Timer status",
+      "kind": "ask",
+      "device": "Timer",
+      "phrases": [
+        "how long is left on the timer",
+        "how much time is left on the timer",
+        "is the timer running"
+      ],
+      "patterns": [],
+      "answer": "The timer is {timer}{timer:remaining}.",
+      "entities": {
+        "timer": "timer.office_timer"
+      }
+    },
+    {
+      "id": "ask_alarm",
+      "label": "Alarm status",
+      "kind": "ask",
+      "device": "Alarm",
+      "phrases": [
+        "is the alarm set",
+        "what time is the alarm set for",
+        "when is the alarm"
+      ],
+      "patterns": [],
+      "answer": "The alarm is {alarm}, set for {time}.",
+      "entities": {
+        "alarm": "input_boolean.alarm_enabled",
+        "time": "input_datetime.alarm_time"
+      }
+    },
+    {
+      "id": "ask_weather",
+      "label": "Weather now",
+      "kind": "ask",
+      "device": "Weather",
+      "phrases": [
+        "what is the weather",
+        "whats the weather like",
+        "what is the weather like",
+        "how is the weather",
+        "what is the temperature outside",
+        "how hot is it outside",
+        "how cold is it outside"
+      ],
+      "patterns": [],
+      "answer": "It is {weather} and {weather:temperature} degrees Fahrenheit.",
+      "entities": {
+        "weather": "weather.openweathermap"
+      }
+    },
+    {
+      "id": "ask_kia",
+      "label": "Kia lock status",
+      "kind": "ask",
+      "device": "Kia K5",
+      "phrases": [
+        "what is the Kia status",
+        "how is my Kia",
+        "is the Kia locked"
+      ],
+      "patterns": [],
+      "answer": "The Kia door lock is {lock}.",
+      "entities": {
+        "lock": "lock.my_k5_door_lock"
+      }
+    },
+    {
+      "id": "ask_camera_front_door",
+      "label": "Front door camera status",
+      "kind": "ask",
+      "device": "Cameras",
+      "phrases": [
+        "is the front door camera online",
+        "is the front door camera recording"
+      ],
+      "patterns": [],
+      "answer": "The front door camera is {camera}.",
+      "entities": {
+        "camera": "camera.front_door"
+      }
+    },
+    {
+      "id": "ask_camera_garage",
+      "label": "Garage camera status",
+      "kind": "ask",
+      "device": "Cameras",
+      "phrases": [
+        "is the garage camera online",
+        "is the garage camera recording"
+      ],
+      "patterns": [],
+      "answer": "The garage camera is {camera}.",
+      "entities": {
+        "camera": "camera.garage"
+      }
+    },
+    {
+      "id": "ask_camera_patio",
+      "label": "Patio camera status",
+      "kind": "ask",
+      "device": "Cameras",
+      "phrases": [
+        "is the patio camera online",
+        "is the patio camera recording"
+      ],
+      "patterns": [],
+      "answer": "The patio camera is {camera}.",
+      "entities": {
+        "camera": "camera.patio"
+      }
+    },
+    {
+      "id": "ask_camera_driveway",
+      "label": "Driveway camera status",
+      "kind": "ask",
+      "device": "Cameras",
+      "phrases": [
+        "is the driveway camera online",
+        "is the driveway camera recording"
+      ],
+      "patterns": [],
+      "answer": "The driveway camera is {camera}.",
+      "entities": {
+        "camera": "camera.driveway"
+      }
+    },
+    {
+      "id": "ask_time",
+      "label": "What time is it",
+      "kind": "ask",
+      "device": "Clock",
+      "phrases": [
+        "what time is it",
+        "what is the time"
+      ],
+      "patterns": [],
+      "answer": "It is {clock_time}.",
+      "source": "clock"
+    },
+    {
+      "id": "ask_date",
+      "label": "What is todays date",
+      "kind": "ask",
+      "device": "Clock",
+      "phrases": [
+        "what is todays date",
+        "what date is it",
+        "what day is it",
+        "what day of the week is it"
+      ],
+      "patterns": [],
+      "answer": "Today is {clock_date}.",
+      "source": "clock"
+    },
+    {
+      "id": "ask_printer",
+      "label": "Printer ink levels",
+      "kind": "ask",
+      "device": "Printer",
+      "phrases": [
+        "how much ink is left",
+        "what is the printer ink level",
+        "how much printer ink is left"
+      ],
+      "patterns": [],
+      "answer": "Black is {black} percent, cyan is {cyan} percent, magenta is {magenta} percent, yellow is {yellow} percent.",
+      "entities": {
+        "black": "sensor.hp_color_laserjet_mfp_m277c6_black_cartridge_hp_cf400x",
+        "cyan": "sensor.hp_color_laserjet_mfp_m277c6_cyan_cartridge_hp_cf401x",
+        "magenta": "sensor.hp_color_laserjet_mfp_m277c6_magenta_cartridge_hp_cf403x",
+        "yellow": "sensor.hp_color_laserjet_mfp_m277c6_yellow_cartridge_hp_cf402x"
+      }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "title": "EchoMuse Mercury",
+  "path": "prompts",
+  "icon": "mdi:pencil",
+  "cards": [
+    {
+      "type": "iframe",
+      "url": "https://echo.petrafied.net/"
+    }
+  ],
+  "panel": true
+}
