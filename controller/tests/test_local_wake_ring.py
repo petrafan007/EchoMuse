@@ -116,3 +116,29 @@ def test_the_private_path_darkens_a_loser_and_cues_a_device_with_no_ha():
     cede = code[code.index("else:"):]
     assert "_leds_turn_end(device)" in standdown
     assert "leds_off(device)" in cede and "_leds_turn_end" not in cede
+
+
+def test_the_no_ha_stand_down_plays_an_error_tone():
+    """A wake that stands down with no HA behind it must be audible, not
+    just a ring cue: the failure mode that started this work was three
+    unanswered wakes with no signal anything had happened at all."""
+    src = (CONTROLLER / "em_controller.py").read_text()
+    src = src[src.index("async def _private_wake_turn"):]
+    branch = src[src.index("if not serves or won_by != device.device_id:"):]
+    branch = branch[:branch.index("await device.listen_ack")]
+    no_ha, cede = branch.split("\n        else:\n", 1)
+    assert "_play_error_tone(device)" in no_ha, \
+        "a wake with no HA must play the error tone"
+    assert "_play_error_tone(device)" not in cede, \
+        "a device that ceded arbitration must stay silent"
+
+
+def test_the_no_ha_button_press_plays_an_error_tone():
+    """Same rule on the button path: the button is what someone reaches
+    for precisely when the wake word appears to have done nothing."""
+    src = (CONTROLLER / "em_controller.py").read_text()
+    start = src.index("elif not esphome.can_serve_turn(device.device_id):")
+    block = src[start:]
+    block = block[:block.index("\n        else:\n")]
+    assert "_play_error_tone(device)" in block, \
+        "a button press with no HA must play the error tone"

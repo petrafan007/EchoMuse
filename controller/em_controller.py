@@ -2410,6 +2410,64 @@ async def _alarm_burst_pcm() -> bytes:
     return pcm
 
 
+
+_error_tone_cache = None
+
+
+def _error_tone_pcm():
+    """Two descending beeps (48kHz mono S16_LE) for a no-HA stand-down.
+
+    Deliberately unlike the wake chime (rising) and the timer alarm, so a
+    fault is recognisable from the next room. Synthesised, not a file, so
+    there is nothing to package or lose; cached like the alarm burst.
+    """
+    global _error_tone_cache
+    if _error_tone_cache is not None:
+        return _error_tone_cache
+    import math
+    import struct
+
+    rate = SPEAKER_RATE
+    pcm = bytearray()
+
+    def beep(freq, ms):
+        n = int(rate * ms / 1000)
+        fade = int(rate * 0.010)
+        for i in range(n):
+            t = i / rate
+            amp = 0.7
+            if i < fade:
+                amp *= i / fade
+            elif i >= n - fade:
+                amp *= (n - i) / fade
+            pcm += struct.pack("<h", int(amp * 32767 * math.sin(2 * math.pi * freq * t)))
+
+    def silence(ms):
+        pcm += b"\x00\x00" * int(rate * ms / 1000)
+
+    beep(740.0, 180)
+    silence(120)
+    beep(520.0, 240)
+    _error_tone_cache = bytes(pcm)
+    return _error_tone_cache
+
+
+async def _play_error_tone(device):
+    """Play the error tone on the device after a no-HA stand-down.
+
+    Best-effort by design: a tone failure must never break the stand-down
+    path itself, so every failure is logged and swallowed.
+    """
+    try:
+        pcm = _error_tone_pcm()
+        if not pcm:
+            return
+        await em_player.interrupt(device.device_id)
+        await _run_post_turn_playback(device, pcm)
+    except Exception:
+        log.exception("[" + device.device_id + "] Error tone failed")
+
+
 async def _wait_for_turn_audio(device: Device) -> bool:
     """
     Block until any voice turn already in flight has fully finished.
@@ -3466,6 +3524,7 @@ async def _private_wake_turn(device: Device, ev: dict) -> None:
         if not serves:
             await esphome.record_dropped_wake(device, f"wakeword({score:.3f})", wake_info)
             await _leds_turn_end(device)
+            await _play_error_tone(device)
             log.info(f"[{device.device_id}] Wake heard but no HA connection — standing down "
                      f"(score={score:.3f})")
             em_dbwriter.submit(db.log_device, device.device_id, "info", "controller",
@@ -4358,6 +4417,7 @@ async def handle_button_event(device: Device, event: dict):
             await leds_listening(device)
             await esphome.record_dropped_wake(device, "button", None)
             await _leds_turn_end(device)
+            await _play_error_tone(device)
         else:
             log.info(f"[{device.device_id}] Dot button → voice turn")
             device.cancel_event.clear()
